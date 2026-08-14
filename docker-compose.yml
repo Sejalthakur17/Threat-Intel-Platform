@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+
+  app:
+    build: ./app
+    container_name: threat-intel-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST:     postgres
+      DB_NAME:     threatintel
+      DB_USER:     sejal
+      DB_PASS:     ${DB_PASS}
+      REDIS_HOST:  redis
+      OTX_API_KEY: ${OTX_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [backend]
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: threat-intel-db
+    restart: always
+    environment:
+      POSTGRES_DB:       threatintel
+      POSTGRES_USER:     sejal
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sejal -d threatintel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    container_name: threat-intel-cache
+    restart: always
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks: [backend]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: threat-intel-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: threat-intel-grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer   # public read-only dashboard
+    volumes:
+      - grafdata:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks: [backend]
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: threat-intel-node-exporter
+    restart: always
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+    networks: [backend]
+
+volumes:
+  pgdata:
+  promdata:
+  grafdata:
+
+networks:
+  backend:
+    driver: bridge

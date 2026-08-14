@@ -1,0 +1,23 @@
+# Secrets — NEVER commit these
+.env
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.pem
+*.key
+id_rsa*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Docker
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db

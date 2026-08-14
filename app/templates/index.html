@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threat Intelligence Platform</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; }
+
+    header {
+      background: #161b22; border-bottom: 1px solid #30363d;
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { color: #58a6ff; font-size: 1.3rem; }
+    header span { color: #8b949e; font-size: 0.85rem; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
+
+    /* stat cards */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .card {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 8px; padding: 20px;
+    }
+    .card .label { color: #8b949e; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card .value { font-size: 2rem; font-weight: 700; color: #58a6ff; margin-top: 6px; }
+    .card .sub   { font-size: 0.8rem; color: #8b949e; margin-top: 4px; }
+
+    /* search bar */
+    .search-box {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 8px; padding: 20px; margin-bottom: 24px;
+    }
+    .search-box h2 { font-size: 1rem; margin-bottom: 12px; color: #e6edf3; }
+    .search-row { display: flex; gap: 10px; }
+    .search-row input {
+      flex: 1; padding: 10px 14px; background: #0d1117;
+      border: 1px solid #30363d; border-radius: 6px;
+      color: #c9d1d9; font-size: 0.95rem;
+    }
+    .search-row input:focus { outline: none; border-color: #58a6ff; }
+    .search-row button {
+      padding: 10px 22px; background: #238636; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+    }
+    .search-row button:hover { background: #2ea043; }
+    #result {
+      margin-top: 14px; padding: 14px; border-radius: 6px;
+      font-size: 0.9rem; display: none;
+    }
+    .result-clean    { background: #0d1b0f; border: 1px solid #238636; color: #3fb950; }
+    .result-threat   { background: #1b0d0d; border: 1px solid #f85149; color: #f85149; }
+    .result-threat b { color: #ff7b72; }
+
+    /* feed table */
+    .feed { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+    .feed h2 { padding: 16px 20px; font-size: 1rem; border-bottom: 1px solid #30363d; color: #e6edf3; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { padding: 10px 16px; background: #0d1117; color: #8b949e; text-align: left; font-weight: 500; }
+    td { padding: 10px 16px; border-top: 1px solid #21262d; }
+    tr:hover td { background: #1c2128; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-ip     { background: #1b3a6b; color: #58a6ff; }
+    .badge-url    { background: #3b2a1b; color: #f0883e; }
+    .badge-domain { background: #2a1b3b; color: #bc8cff; }
+    .badge-hash   { background: #1b3b2a; color: #3fb950; }
+    .badge-feodo  { background: #3b1b1b; color: #f85149; }
+    .badge-urlhaus{ background: #3b2a1b; color: #f0883e; }
+    .badge-otx    { background: #1b2a3b; color: #58a6ff; }
+
+    .conf-high   { color: #f85149; }
+    .conf-medium { color: #f0883e; }
+    .conf-low    { color: #3fb950; }
+
+    .ioc-cell { font-family: monospace; font-size: 0.8rem;
+                max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    footer { text-align: center; color: #8b949e; font-size: 0.8rem; padding: 24px; }
+    footer a { color: #58a6ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛡 Threat Intelligence Platform</h1>
+  <span>Last synced: {{ updated }} &nbsp;|&nbsp; Built by Sejal Thakur</span>
+</header>
+
+<div class="container">
+
+  <!-- STAT CARDS -->
+  <div class="stats">
+    <div class="card">
+      <div class="label">Total IOCs</div>
+      <div class="value">{{ "{:,}".format(total) }}</div>
+      <div class="sub">in database</div>
+    </div>
+    <div class="card">
+      <div class="label">Added (24h)</div>
+      <div class="value">{{ "{:,}".format(last24h) }}</div>
+      <div class="sub">new indicators</div>
+    </div>
+    <div class="card">
+      <div class="label">Sources</div>
+      <div class="value">{{ by_source|length }}</div>
+      <div class="sub">{{ by_source.keys()|join(', ') }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Types</div>
+      <div class="value">{{ by_type|length }}</div>
+      <div class="sub">{{ by_type.keys()|join(', ') }}</div>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-box">
+    <h2>🔍 Check an IP, Domain, or URL</h2>
+    <div class="search-row">
+      <input type="text" id="query" placeholder="e.g.  185.220.101.1  or  evil.com  or  http://bad.site/file.exe">
+      <button onclick="checkIndicator()">Check</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <!-- LIVE FEED -->
+  <div class="feed">
+    <h2>⚡ Live Threat Feed — 50 most recent indicators</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Indicator</th>
+          <th>Type</th>
+          <th>Source</th>
+          <th>Threat</th>
+          <th>Confidence</th>
+          <th>Last Seen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recent %}
+        <tr>
+          <td class="ioc-cell" title="{{ row[0] }}">{{ row[0] }}</td>
+          <td><span class="badge badge-{{ row[1] }}">{{ row[1] }}</span></td>
+          <td><span class="badge badge-{{ row[2] }}">{{ row[2] }}</span></td>
+          <td>{{ row[3] or '—' }}</td>
+          <td class="{% if row[4] >= 80 %}conf-high{% elif row[4] >= 60 %}conf-medium{% else %}conf-low{% endif %}">
+            {{ row[4] }}%
+          </td>
+          <td>{{ row[5].strftime('%Y-%m-%d %H:%M') if row[5] else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:#8b949e;padding:32px;">
+          Feed syncing — check back in a minute.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  Built by <a href="https://github.com/Sejalthakur17" target="_blank">Sejal Thakur</a> &nbsp;·&nbsp;
+  Sources: abuse.ch · Feodo Tracker · AlienVault OTX &nbsp;·&nbsp;
+  <a href="/api/stats">API Stats</a> &nbsp;·&nbsp;
+  <a href="/metrics">Prometheus Metrics</a>
+</footer>
+
+<script>
+async function checkIndicator() {
+  const q   = document.getElementById("query").value.trim();
+  const div = document.getElementById("result");
+  if (!q) return;
+
+  div.style.display = "block";
+  div.className = "";
+  div.innerHTML = "Checking...";
+
+  const param = q.startsWith("http") ? "url" : q.includes(".") && !q.match(/^\d+\.\d+\.\d+\.\d+$/) ? "domain" : "ip";
+  const res   = await fetch(`/api/check?${param}=${encodeURIComponent(q)}`);
+  const data  = await res.json();
+
+  if (data.malicious) {
+    div.className = "result-threat";
+    div.innerHTML = `
+      <b>⚠ MALICIOUS</b> — found in <b>${data.hits}</b> source(s),
+      max confidence <b>${data.max_confidence}%</b><br><br>
+      ${data.sources.map(s =>
+        `<b>${s.source}</b>: ${s.threat_type || 'threat'} (${s.confidence}%) — last seen ${s.last_seen.split('T')[0]}`
+      ).join('<br>')}
+    `;
+  } else {
+    div.className = "result-clean";
+    div.innerHTML = `✓ <b>Not found</b> in our threat database. (Always verify with multiple sources.)`;
+  }
+}
+
+document.getElementById("query").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkIndicator();
+});
+</script>
+
+</body>
+</html>

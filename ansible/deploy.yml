@@ -1,0 +1,124 @@
+---
+# Run with:
+# ansible-playbook -i inventory.ini deploy.yml
+
+- name: Deploy Threat Intelligence Platform
+  hosts: app_server
+  become: yes
+  vars:
+    app_dir: /opt/threat-intel
+    db_pass: "{{ lookup('env', 'DB_PASS') }}"
+    grafana_pass: "{{ lookup('env', 'GRAFANA_PASS') | default('admin123') }}"
+    otx_key: "{{ lookup('env', 'OTX_API_KEY') | default('') }}"
+
+  tasks:
+
+    - name: Install dependencies
+      apt:
+        name: [docker.io, docker-compose-plugin, git, ufw]
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        mode: "0755"
+
+    - name: Copy project files
+      synchronize:
+        src: ../
+        dest: "{{ app_dir }}"
+        delete: yes
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=terraform"
+          - "--exclude=*.tfvars"
+
+    - name: Write .env file
+      copy:
+        dest: "{{ app_dir }}/.env"
+        mode: "0600"
+        content: |
+          DB_PASS={{ db_pass }}
+          GRAFANA_PASS={{ grafana_pass }}
+          OTX_API_KEY={{ otx_key }}
+
+    - name: Pull and build Docker images
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        pull: always
+        build: always
+        state: present
+
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: ["22", "80", "443", "5000", "3000"]
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Set up log rotation for docker
+      copy:
+        dest: /etc/logrotate.d/docker-containers
+        content: |
+          /var/lib/docker/containers/*/*.log {
+            rotate 7
+            daily
+            compress
+            missingok
+            delaycompress
+            copytruncate
+          }
+
+    - name: Create systemd service for auto-start
+      copy:
+        dest: /etc/systemd/system/threat-intel.service
+        content: |
+          [Unit]
+          Description=Threat Intelligence Platform
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          WorkingDirectory={{ app_dir }}
+          ExecStart=/usr/bin/docker compose up
+          ExecStop=/usr/bin/docker compose down
+          Restart=always
+          User=ubuntu
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start threat-intel service
+      systemd:
+        name: threat-intel
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Print URLs
+      debug:
+        msg:
+          - "App:      http://{{ ansible_host }}:5000"
+          - "Grafana:  http://{{ ansible_host }}:3000"
+          - "Metrics:  http://{{ ansible_host }}:5000/metrics"

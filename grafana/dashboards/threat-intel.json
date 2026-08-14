@@ -1,0 +1,67 @@
+{
+  "title": "Threat Intelligence Platform",
+  "uid": "threat-intel-main",
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Total IOCs in DB",
+      "gridPos": {"x":0,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "threat_iocs_total", "legendFormat": "IOCs"}],
+      "options": {"colorMode": "background"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"},
+        "thresholds": {"steps": [{"color":"green","value":0}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "API Checks (total)",
+      "gridPos": {"x":6,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "threat_api_checks_total", "legendFormat": "Checks"}],
+      "options": {"colorMode": "background"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"},
+        "thresholds": {"steps": [{"color":"blue","value":0}]}}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Threats Detected",
+      "gridPos": {"x":12,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "threat_detections_total", "legendFormat": "Detections"}],
+      "options": {"colorMode": "background"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"},
+        "thresholds": {"steps": [{"color":"red","value":0}]}}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "HTTP Requests / min",
+      "gridPos": {"x":18,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "rate(app_requests_total[1m])*60", "legendFormat": "req/min"}],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Request Rate",
+      "gridPos": {"x":0,"y":4,"w":12,"h":8},
+      "targets": [{"expr": "rate(app_requests_total[5m])", "legendFormat": "{{endpoint}}"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Request Latency (p95)",
+      "gridPos": {"x":12,"y":4,"w":12,"h":8},
+      "targets": [{"expr": "histogram_quantile(0.95, rate(app_request_latency_seconds_bucket[5m]))",
+        "legendFormat": "p95 latency"}],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "CPU Usage %",
+      "gridPos": {"x":0,"y":12,"w":12,"h":8},
+      "targets": [{"expr": "100 - (avg(rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+        "legendFormat": "CPU %"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100}}
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Memory Usage",
+      "gridPos": {"x":12,"y":12,"w":12,"h":8},
+      "targets": [{"expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+        "legendFormat": "Used"},
+        {"expr": "node_memory_MemTotal_bytes", "legendFormat": "Total"}],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

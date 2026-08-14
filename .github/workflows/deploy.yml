@@ -1,0 +1,142 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: threat-intel-app
+
+jobs:
+
+  # ── SECURITY GATES ─────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Gates
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Scan Terraform IaC for misconfigurations
+      - name: Checkov — IaC Security Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/
+          framework: terraform
+          soft_fail: false       # FAILS build on HIGH findings
+          output_format: cli
+
+      # 2. Scan for secrets in code
+      - name: GitLeaks — Secret Detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Static code analysis
+      - name: Semgrep — SAST Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/flask
+            p/secrets
+          auditOn: push
+
+  # ── BUILD & IMAGE SCAN ──────────────────────────────────────────────────────
+  build:
+    name: Build & Scan Image
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME:${{ github.sha }} ./app
+
+      # 4. Scan Docker image for CVEs
+      - name: Trivy — Container Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: 1           # FAILS build on HIGH/CRITICAL CVEs
+
+      - name: Save Docker image
+        run: docker save $IMAGE_NAME:${{ github.sha }} | gzip > image.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
+          retention-days: 1
+
+  # ── DEPLOY (only on main branch push) ──────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/threat-intel
+          chmod 600 ~/.ssh/threat-intel
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy image to EC2
+        run: |
+          scp -i ~/.ssh/threat-intel image.tar.gz \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/image.tar.gz
+
+      - name: Deploy on EC2
+        run: |
+          ssh -i ~/.ssh/threat-intel ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
+            # Load new image
+            docker load < /tmp/image.tar.gz
+            rm /tmp/image.tar.gz
+
+            # Pull latest compose file and restart
+            cd /opt/threat-intel
+            git pull origin main
+
+            # Zero-downtime restart: start new, stop old
+            docker compose up -d --no-deps --build app
+
+            # Cleanup old images
+            docker image prune -f
+          ENDSSH
+
+      - name: Health check
+        run: |
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            http://${{ secrets.EC2_HOST }}:5000/health)
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed — status $STATUS"
+            exit 1
+          fi
+          echo "Deployment successful — app is healthy"
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "Deploy status: ${{ job.status }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Deployed by: ${{ github.actor }}"

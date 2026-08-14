@@ -1,0 +1,324 @@
+[
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "threading",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "threading",
+        "description": "threading",
+        "detail": "threading",
+        "documentation": {}
+    },
+    {
+        "label": "requests",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "requests",
+        "description": "requests",
+        "detail": "requests",
+        "documentation": {}
+    },
+    {
+        "label": "psycopg2",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "psycopg2",
+        "description": "psycopg2",
+        "detail": "psycopg2",
+        "documentation": {}
+    },
+    {
+        "label": "redis",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "redis",
+        "description": "redis",
+        "detail": "redis",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
+        "label": "ipaddress",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "ipaddress",
+        "description": "ipaddress",
+        "detail": "ipaddress",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "Flask",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "render_template",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "jsonify",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "request",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
+        "label": "Counter",
+        "importPath": "prometheus_client",
+        "description": "prometheus_client",
+        "isExtraImport": true,
+        "detail": "prometheus_client",
+        "documentation": {}
+    },
+    {
+        "label": "Histogram",
+        "importPath": "prometheus_client",
+        "description": "prometheus_client",
+        "isExtraImport": true,
+        "detail": "prometheus_client",
+        "documentation": {}
+    },
+    {
+        "label": "Gauge",
+        "importPath": "prometheus_client",
+        "description": "prometheus_client",
+        "isExtraImport": true,
+        "detail": "prometheus_client",
+        "documentation": {}
+    },
+    {
+        "label": "generate_latest",
+        "importPath": "prometheus_client",
+        "description": "prometheus_client",
+        "isExtraImport": true,
+        "detail": "prometheus_client",
+        "documentation": {}
+    },
+    {
+        "label": "CONTENT_TYPE_LATEST",
+        "importPath": "prometheus_client",
+        "description": "prometheus_client",
+        "isExtraImport": true,
+        "detail": "prometheus_client",
+        "documentation": {}
+    },
+    {
+        "label": "get_db",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def get_db():\n    return psycopg2.connect(\n        host=DB_HOST, dbname=DB_NAME,\n        user=DB_USER, password=DB_PASS\n    )\ndef init_db():\n    conn = get_db()\n    cur  = conn.cursor()\n    cur.execute(\"\"\"\n        CREATE TABLE IF NOT EXISTS iocs (",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "init_db",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def init_db():\n    conn = get_db()\n    cur  = conn.cursor()\n    cur.execute(\"\"\"\n        CREATE TABLE IF NOT EXISTS iocs (\n            id          SERIAL PRIMARY KEY,\n            indicator   TEXT NOT NULL,\n            type        VARCHAR(20) NOT NULL,   -- ip, url, domain, hash\n            source      VARCHAR(50) NOT NULL,   -- abusech, feodo, otx\n            threat_type TEXT,",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "get_cache",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def get_cache():\n    return redis.Redis(host=REDIS_HOST, port=6379, decode_responses=True)\n# ── FEED FETCHERS ───────────────────────────────────────────────────────────\ndef fetch_feodo():\n    \"\"\"Feodo Tracker — botnet C2 IP blocklist (CSV)\"\"\"\n    try:\n        r = requests.get(\n            \"https://feodotracker.abuse.ch/downloads/ipblocklist.csv\",\n            timeout=15\n        )",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_feodo",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def fetch_feodo():\n    \"\"\"Feodo Tracker — botnet C2 IP blocklist (CSV)\"\"\"\n    try:\n        r = requests.get(\n            \"https://feodotracker.abuse.ch/downloads/ipblocklist.csv\",\n            timeout=15\n        )\n        conn = get_db()\n        cur  = conn.cursor()\n        count = 0",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_urlhaus",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def fetch_urlhaus():\n    \"\"\"abuse.ch URLhaus — malicious URLs (JSON)\"\"\"\n    try:\n        r = requests.post(\n            \"https://urlhaus-api.abuse.ch/v1/urls/recent/limit/200/\",\n            timeout=15\n        )\n        data  = r.json()\n        urls  = data.get(\"urls\", [])\n        conn  = get_db()",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_otx",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def fetch_otx():\n    \"\"\"AlienVault OTX — pulse indicators (requires free API key)\"\"\"\n    if not OTX_API_KEY:\n        print(\"[OTX] No API key set — skipping\")\n        return 0\n    try:\n        headers = {\"X-OTX-API-KEY\": OTX_API_KEY}\n        since   = (datetime.utcnow() - timedelta(days=1)).strftime(\"%Y-%m-%dT%H:%M:%S\")\n        r       = requests.get(\n            f\"https://otx.alienvault.com/api/v1/pulses/subscribed?modified_since={since}&limit=10\",",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "sync_feeds",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def sync_feeds():\n    \"\"\"Run all fetchers, update Prometheus gauges\"\"\"\n    print(f\"[Sync] Starting feed sync at {datetime.utcnow()}\")\n    fetch_feodo()\n    fetch_urlhaus()\n    fetch_otx()\n    # update IOC count gauge\n    try:\n        conn = get_db()\n        cur  = conn.cursor()",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "background_sync",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def background_sync():\n    \"\"\"Sync every 6 hours in background thread\"\"\"\n    while True:\n        sync_feeds()\n        time.sleep(6 * 60 * 60)\n# ── ROUTES ───────────────────────────────────────────────────────────────────\n@app.before_request\ndef start_timer():\n    request._start_time = time.time()\n@app.after_request",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "start_timer",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def start_timer():\n    request._start_time = time.time()\n@app.after_request\ndef record_metrics(response):\n    latency = time.time() - getattr(request, \"_start_time\", time.time())\n    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()\n    REQUEST_LATENCY.labels(request.path).observe(latency)\n    return response\n@app.route(\"/\")\ndef index():",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "record_metrics",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def record_metrics(response):\n    latency = time.time() - getattr(request, \"_start_time\", time.time())\n    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()\n    REQUEST_LATENCY.labels(request.path).observe(latency)\n    return response\n@app.route(\"/\")\ndef index():\n    \"\"\"Main dashboard\"\"\"\n    try:\n        conn = get_db()",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "index",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def index():\n    \"\"\"Main dashboard\"\"\"\n    try:\n        conn = get_db()\n        cur  = conn.cursor()\n        # recent threats\n        cur.execute(\"\"\"\n            SELECT indicator, type, source, threat_type, confidence, last_seen\n            FROM iocs ORDER BY last_seen DESC LIMIT 50\n        \"\"\")",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "check",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def check():\n    \"\"\"\n    Check if an IP, domain, or URL is in the threat database.\n    GET /api/check?ip=1.2.3.4\n    GET /api/check?domain=evil.com\n    GET /api/check?url=http://bad.site/malware.exe\n    \"\"\"\n    API_CHECKS.inc()\n    indicator = (\n        request.args.get(\"ip\") or",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "stats",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def stats():\n    \"\"\"Quick stats endpoint\"\"\"\n    try:\n        conn = get_db()\n        cur  = conn.cursor()\n        cur.execute(\"SELECT COUNT(*) FROM iocs\")\n        total = cur.fetchone()[0]\n        cur.execute(\"SELECT COUNT(*) FROM iocs WHERE last_seen > NOW() - INTERVAL '24 hours'\")\n        last24h = cur.fetchone()[0]\n        cur.execute(\"SELECT source, COUNT(*) FROM iocs GROUP BY source\")",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "metrics",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def metrics():\n    \"\"\"Prometheus scrape endpoint\"\"\"\n    return generate_latest(), 200, {\"Content-Type\": CONTENT_TYPE_LATEST}\n@app.route(\"/health\")\ndef health():\n    return jsonify({\"status\": \"ok\", \"time\": datetime.utcnow().isoformat()})\n# ── STARTUP ──────────────────────────────────────────────────────────────────\nif __name__ == \"__main__\":\n    time.sleep(5)                          # wait for postgres to be ready\n    init_db()",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "health",
+        "kind": 2,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "def health():\n    return jsonify({\"status\": \"ok\", \"time\": datetime.utcnow().isoformat()})\n# ── STARTUP ──────────────────────────────────────────────────────────────────\nif __name__ == \"__main__\":\n    time.sleep(5)                          # wait for postgres to be ready\n    init_db()\n    t = threading.Thread(target=background_sync, daemon=True)\n    t.start()\n    app.run(host=\"0.0.0.0\", port=5000, debug=False)",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "app = Flask(__name__)\n# ── ENV CONFIG ─────────────────────────────────────────────────────────────\nDB_HOST     = os.getenv(\"DB_HOST\", \"localhost\")\nDB_NAME     = os.getenv(\"DB_NAME\", \"threatintel\")\nDB_USER     = os.getenv(\"DB_USER\", \"sejal\")\nDB_PASS     = os.getenv(\"DB_PASS\", \"changeme\")\nREDIS_HOST  = os.getenv(\"REDIS_HOST\", \"localhost\")\nOTX_API_KEY = os.getenv(\"OTX_API_KEY\", \"\")          # free at otx.alienvault.com\n# ── PROMETHEUS METRICS ──────────────────────────────────────────────────────\nREQUEST_COUNT    = Counter(\"app_requests_total\",    \"Total HTTP requests\",   [\"method\", \"endpoint\", \"status\"])",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "OTX_API_KEY",
+        "kind": 5,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "OTX_API_KEY = os.getenv(\"OTX_API_KEY\", \"\")          # free at otx.alienvault.com\n# ── PROMETHEUS METRICS ──────────────────────────────────────────────────────\nREQUEST_COUNT    = Counter(\"app_requests_total\",    \"Total HTTP requests\",   [\"method\", \"endpoint\", \"status\"])\nREQUEST_LATENCY  = Histogram(\"app_request_latency_seconds\", \"Request latency\", [\"endpoint\"])\nIOC_COUNT        = Gauge(\"threat_iocs_total\",       \"Total IOCs in database\")\nLAST_FETCH_TIME  = Gauge(\"threat_last_fetch_timestamp\", \"Unix timestamp of last successful feed fetch\")\nAPI_CHECKS       = Counter(\"threat_api_checks_total\",   \"Total IP/domain checks via API\")\nTHREATS_DETECTED = Counter(\"threat_detections_total\",   \"Total positive threat detections\")\n# ── DATABASE ────────────────────────────────────────────────────────────────\ndef get_db():",
+        "detail": "app.app",
+        "documentation": {}
+    },
+    {
+        "label": "THREATS_DETECTED",
+        "kind": 5,
+        "importPath": "app.app",
+        "description": "app.app",
+        "peekOfCode": "THREATS_DETECTED = Counter(\"threat_detections_total\",   \"Total positive threat detections\")\n# ── DATABASE ────────────────────────────────────────────────────────────────\ndef get_db():\n    return psycopg2.connect(\n        host=DB_HOST, dbname=DB_NAME,\n        user=DB_USER, password=DB_PASS\n    )\ndef init_db():\n    conn = get_db()\n    cur  = conn.cursor()",
+        "detail": "app.app",
+        "documentation": {}
+    }
+]
