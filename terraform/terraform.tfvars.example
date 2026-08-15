@@ -2,5 +2,5 @@
 # NEVER commit terraform.tfvars to GitHub
 
 aws_region      = "ap-south-1"
-my_ip           = "YOUR_HOME_IP/32"    # e.g. "103.xx.xx.xx/32"
+my_ip = "0.0.0.0/0"
 public_key_path = "~/.ssh/threat-intel.pub"

@@ -18,6 +18,9 @@ venv/
 # Docker
 *.tar.gz
 
+# VS Code
+.vscode/
+
 # OS
 .DS_Store
 Thumbs.db

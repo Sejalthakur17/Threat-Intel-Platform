@@ -120,7 +120,7 @@ resource "aws_key_pair" "deployer" {
 # ── EC2 (t2.micro — free tier) ────────────────────────────────────────────────
 resource "aws_instance" "app" {
   ami                    = var.ami_id        # Ubuntu 22.04 LTS
-  instance_type          = "t2.micro"        # free tier
+  instance_type          = "t3.micro"       # free tier
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.app.id]
   key_name               = aws_key_pair.deployer.key_name
@@ -131,10 +131,25 @@ resource "aws_instance" "app" {
     encrypted   = true
   }
 
-  user_data = <<-EOF
+user_data = <<-EOF
     #!/bin/bash
+    set -e
     apt-get update -y
-    apt-get install -y docker.io docker-compose-plugin git
+    apt-get install -y ca-certificates curl gnupg git
+
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+      gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    chmod a+r /etc/apt/keyrings/docker.gpg
+
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] \
+      https://download.docker.com/linux/ubuntu jammy stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    apt-get update -y
+    apt-get install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin
+
     systemctl enable docker
     systemctl start docker
     usermod -aG docker ubuntu

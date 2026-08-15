@@ -15,9 +15,15 @@
 
     - name: Install dependencies
       apt:
-        name: [docker.io, docker-compose-plugin, git, ufw]
+        name: [git, ufw]
         state: present
         update_cache: yes
+
+    - name: Ensure Docker is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
 
     - name: Start and enable Docker
       systemd:

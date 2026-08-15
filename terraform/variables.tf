@@ -9,7 +9,7 @@ variable "project" {
 variable "ami_id" {
   # Ubuntu 22.04 LTS in ap-south-1 (Mumbai)
   # Check latest: https://cloud-images.ubuntu.com/locator/ec2/
-  default = "ami-0f58b397bc5c1f2e8"
+  default = "ami-0aa761682283b4cc8"
 }
 
 variable "my_ip" {

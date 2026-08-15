@@ -116,29 +116,26 @@ def fetch_feodo():
         return 0
 
 def fetch_urlhaus():
-    """abuse.ch URLhaus — malicious URLs (JSON)"""
+    """abuse.ch URLhaus — malicious URL blocklist (no auth needed)"""
     try:
-        r = requests.post(
-            "https://urlhaus-api.abuse.ch/v1/urls/recent/limit/200/",
+        r = requests.get(
+            "https://urlhaus.abuse.ch/downloads/text_recent/",
             timeout=15
         )
-        data  = r.json()
-        urls  = data.get("urls", [])
         conn  = get_db()
         cur   = conn.cursor()
         count = 0
-        for entry in urls:
-            url         = entry.get("url", "")
-            threat_type = entry.get("threat", "malware")
-            tags        = entry.get("tags") or []
-            if not url:
+        for line in r.text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
+            url = line
             cur.execute("""
                 INSERT INTO iocs (indicator, type, source, threat_type, confidence, tags)
-                VALUES (%s, 'url', 'urlhaus', %s, 85, %s)
+                VALUES (%s, 'url', 'urlhaus', 'malware', 85, %s)
                 ON CONFLICT (indicator, source) DO UPDATE
                   SET last_seen = NOW()
-            """, (url, threat_type, tags))
+            """, (url, ["malware"]))
             count += 1
         conn.commit()
         cur.close()
@@ -148,7 +145,6 @@ def fetch_urlhaus():
     except Exception as e:
         print(f"[URLhaus] Error: {e}")
         return 0
-
 def fetch_otx():
     """AlienVault OTX — pulse indicators (requires free API key)"""
     if not OTX_API_KEY:
