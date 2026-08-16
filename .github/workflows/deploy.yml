@@ -8,32 +8,31 @@ on:
 
 jobs:
 
-security-scan:
-  name: Security Gates
-  runs-on: ubuntu-latest
+  security-scan:
+    name: Security Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkov — IaC Security Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/
+          framework: terraform
+          soft_fail: false
 
-    - name: Checkov — IaC Security Scan
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: terraform/
-        framework: terraform
-        soft_fail: false
-
-    - name: GitLeaks — Secret Detection
-      run: |
-        docker run --rm \
-          -v "${{ github.workspace }}:/path" \
-          zricethezav/gitleaks:latest detect \
-          --source /path \
-          --redact \
-          --verbose \
-          --exit-code 1
+      - name: GitLeaks — Secret Detection
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/path" \
+            zricethezav/gitleaks:latest detect \
+            --source /path \
+            --redact \
+            --verbose \
+            --exit-code 1
 
   build:
     name: Build & Scan Image
