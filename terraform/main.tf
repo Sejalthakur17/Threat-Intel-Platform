@@ -51,50 +51,48 @@ resource "aws_security_group" "app" {
   description = "Threat Intel Platform security group"
   vpc_id      = aws_vpc.main.id
 
-  # SSH — your IP only (set in tfvars)
   ingress {
-    description = "SSH"
+    description = "SSH from admin IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.my_ip]
   }
 
-  # App
   ingress {
-    description = "Flask app"
+    description = "Flask app public access"
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Grafana
   ingress {
-    description = "Grafana"
+    description = "Grafana public access"
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Prometheus (restrict to your IP in production)
   ingress {
-    description = "Prometheus"
+    description = "Prometheus from admin IP"
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
     cidr_blocks = [var.my_ip]
   }
 
-  # HTTP/HTTPS (for future nginx reverse proxy)
   ingress {
+    description = "HTTP for future nginx reverse proxy"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   ingress {
+    description = "HTTPS for future nginx reverse proxy"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -102,6 +100,7 @@ resource "aws_security_group" "app" {
   }
 
   egress {
+    description = "Allow outbound internet access for threat feed syncing"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -117,21 +116,48 @@ resource "aws_key_pair" "deployer" {
   public_key = file(var.public_key_path)
 }
 
-# ── EC2 (t2.micro — free tier) ────────────────────────────────────────────────
+# ── FIX: IAM Role for EC2 instance (CKV2_AWS_41) ──────────────────────────────
+resource "aws_iam_role" "ec2" {
+  name = "${var.project}-ec2-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+  tags = { Name = "${var.project}-ec2-role" }
+}
+
+resource "aws_iam_instance_profile" "ec2" {
+  name = "${var.project}-ec2-profile"
+  role = aws_iam_role.ec2.name
+}
+
+# ── EC2 ────────────────────────────────────────────────────────────────────────
 resource "aws_instance" "app" {
-  ami                    = var.ami_id        # Ubuntu 22.04 LTS
-  instance_type          = "t3.micro"       # free tier
+  ami                    = var.ami_id
+  instance_type          = "t3.micro"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.app.id]
   key_name               = aws_key_pair.deployer.key_name
+  iam_instance_profile   = aws_iam_instance_profile.ec2.name
 
   root_block_device {
-    volume_size = 20    # GB — free tier allows up to 30GB
+    volume_size = 20
     volume_type = "gp2"
     encrypted   = true
   }
 
-user_data = <<-EOF
+  # FIX: Enforce IMDSv2 — prevents SSRF credential theft (CKV_AWS_79)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
+  user_data = <<-EOF
     #!/bin/bash
     set -e
     apt-get update -y
@@ -156,13 +182,13 @@ user_data = <<-EOF
   EOF
 
   tags = {
-    Name        = "${var.project}-server"
-    Project     = var.project
-    ManagedBy   = "Terraform"
+    Name      = "${var.project}-server"
+    Project   = var.project
+    ManagedBy = "Terraform"
   }
 }
 
-# ── ELASTIC IP (so URL never changes) ─────────────────────────────────────────
+# ── ELASTIC IP ─────────────────────────────────────────────────────────────────
 resource "aws_eip" "app" {
   instance = aws_instance.app.id
   domain   = "vpc"
