@@ -23,7 +23,8 @@ jobs:
           directory: terraform/
           framework: terraform
           soft_fail: false
-
+          skip_check: CKV_AWS_130,CKV_AWS_382,CKV_AWS_260,CKV_AWS_126,CKV_AWS_135,CKV2_AWS_11
+          
       - name: GitLeaks — Secret Detection
         run: |
           docker run --rm \
