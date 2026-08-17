@@ -200,7 +200,7 @@
         "kind": 2,
         "importPath": "app.app",
         "description": "app.app",
-        "peekOfCode": "def fetch_urlhaus():\n    \"\"\"abuse.ch URLhaus — malicious URLs (JSON)\"\"\"\n    try:\n        r = requests.post(\n            \"https://urlhaus-api.abuse.ch/v1/urls/recent/limit/200/\",\n            timeout=15\n        )\n        data  = r.json()\n        urls  = data.get(\"urls\", [])\n        conn  = get_db()",
+        "peekOfCode": "def fetch_urlhaus():\n    \"\"\"abuse.ch URLhaus — malicious URL blocklist (no auth needed)\"\"\"\n    try:\n        r = requests.get(\n            \"https://urlhaus.abuse.ch/downloads/text_recent/\",\n            timeout=15\n        )\n        conn  = get_db()\n        cur   = conn.cursor()\n        count = 0",
         "detail": "app.app",
         "documentation": {}
     },
