@@ -358,6 +358,15 @@ def stats():
 @app.route("/metrics")
 def metrics():
     """Prometheus scrape endpoint"""
+    try:
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM iocs")
+        IOC_COUNT.set(cur.fetchone()[0])
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 @app.route("/health")
